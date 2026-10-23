@@ -1,0 +1,8 @@
+streamlit
+torch
+torchvision
+numpy
+scikit-learn
+nltk
+ipykernel
+matplotlib
