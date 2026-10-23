@@ -1,9 +1,12 @@
 import json
 import random
+import re
 import joblib
 import streamlit as st
 import torch
 import torch.nn as nn
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 st.set_page_config(page_title="Hearth & Beans Café", page_icon="☕")
 st.title("☕ Hearth & Beans Café Chatbot")
@@ -15,7 +18,16 @@ with open("data/intents.json", encoding="utf-8") as f:
 vectorizer = joblib.load("model/vectorizer.pkl")
 tags = joblib.load("model/tags.pkl")
 
-# Model architecture (must match training)
+# Text preprocessing (must match training)
+stop_words = set(stopwords.words("english"))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r"[^a-zA-Z0-9\s]", "", text.lower())
+    words = [w for w in text.split() if w not in stop_words]
+    return " ".join(lemmatizer.lemmatize(w) for w in words)
+
+# Model architecture
 class ChatbotModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
@@ -80,9 +92,15 @@ if prompt := st.chat_input("Ask about our café..."):
 
     with torch.no_grad():
         output = model(features)
-        confidence, index = torch.softmax(output, dim=1).max(dim=1)
+        probabilities = torch.softmax(output, dim=1)
+        confidence, index = probabilities.max(dim=1)
 
     tag = tags[index.item()]
+
+    # Debug information
+    st.caption(
+        f"Predicted intent: {tag} | Confidence: {confidence.item():.3f}"
+    )
 
     if confidence.item() >= 0.15:
         reply = random.choice(
