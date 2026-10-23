@@ -21,7 +21,9 @@ Customer-Support-Department-Chatbot
 │   └── intents.json       
 │
 ├── model
-│   └── chatbot.pth         
+|   ├── chatbot.pth
+|   ├── tags.pkl
+│   └── vectorizer.pkl        
 |
 ├── notebook/
 │   └── Notebook.ipynb       
