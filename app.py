@@ -1,117 +1,108 @@
-import json
-import random
-import re
-import joblib
+
 import streamlit as st
 import torch
 import torch.nn as nn
+import joblib
+import json
+import re
+import random
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
-st.set_page_config(page_title="Hearth & Beans Café", page_icon="☕")
-st.title("☕ Hearth & Beans Café Chatbot")
-
-# Load files
-with open("data/intents.json", encoding="utf-8") as f:
-    data = json.load(f)
-
+# Load trained files
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 vectorizer = joblib.load("model/vectorizer.pkl")
 tags = joblib.load("model/tags.pkl")
 
-# Text preprocessing (must match training)
+with open("data/intents.json", "r", encoding="utf-8") as f:
+    intents = json.load(f)
+
+nltk.download("stopwords", quiet=True)
+nltk.download("wordnet", quiet=True)
+
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
 def preprocess(text):
     text = re.sub(r"[^a-zA-Z0-9\s]", "", text.lower())
-    words = [w for w in text.split() if w not in stop_words]
+    words = text.split()
+    words = [w for w in words if w not in stop_words]
     return " ".join(lemmatizer.lemmatize(w) for w in words)
 
-# Model architecture
+# Match the model architecture in your notebook
 class ChatbotModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
         self.model = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.005),
+            nn.Dropout(0.02),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.005),
+            nn.Dropout(0.02),
             nn.Linear(hidden_size, output_size)
         )
 
     def forward(self, x):
         return self.model(x)
 
-# Load trained model
-state = torch.load(
-    "model/chatbot.pth",
-    map_location="cpu",
-    weights_only=True
-)
+@st.cache_resource
+def load_model():
+    model = ChatbotModel(
+        len(vectorizer.get_feature_names_out()), 16, len(tags)
+    ).to(device)
+    model.load_state_dict(
+        torch.load("model/chatbot.pth", map_location=device, weights_only=True)
+    )
+    model.eval()
+    return model
 
-model = ChatbotModel(
-    state["model.0.weight"].shape[1],
-    state["model.0.weight"].shape[0],
-    state["model.6.weight"].shape[0]
-)
+model = load_model()
 
-model.load_state_dict(state)
-model.eval()
+def get_response(message):
+    text = vectorizer.transform([preprocess(message)]).toarray()
+    inputs = torch.tensor(text, dtype=torch.float32).to(device)
 
-responses = {
-    intent["tag"]: intent["responses"]
-    for intent in data["intents"]
-}
+    with torch.no_grad():
+        probabilities = torch.softmax(model(inputs), dim=1)
+        confidence, prediction = torch.max(probabilities, dim=1)
 
-# Chat history
+    if confidence.item() < 0.35:
+        return "Sorry, I didn't understand. Could you ask about our café menu or services?"
+
+    tag = tags[prediction.item()]
+    for intent in intents["intents"]:
+        if intent["tag"] == tag:
+            return random.choice(intent["responses"])
+
+    return "Welcome to Hearth & Beans Café! How can I help you?"
+
+# Streamlit interface
+st.set_page_config(page_title="Hearth & Beans Café", page_icon="☕")
+st.title("☕ Hearth & Beans Café")
+st.caption("Your cozy corner for coffee, treats, and good conversations.")
+
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {
-            "role": "assistant",
-            "content": "Welcome to Hearth & Beans Café! ☕ How can I help you?"
-        }
+        {"role": "assistant",
+         "content": "Hello! Welcome to Hearth & Beans Café. How can I help you today?"}
     ]
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# User input
 if prompt := st.chat_input("Ask about our café..."):
     st.session_state.messages.append(
         {"role": "user", "content": prompt}
     )
-
     with st.chat_message("user"):
         st.write(prompt)
 
-    features = vectorizer.transform([prompt]).toarray()
-    features = torch.tensor(features, dtype=torch.float32)
-
-    with torch.no_grad():
-        output = model(features)
-        probabilities = torch.softmax(output, dim=1)
-        confidence, index = probabilities.max(dim=1)
-
-    tag = tags[index.item()]
-
-    # Debug information
-    st.caption(
-        f"Predicted intent: {tag} | Confidence: {confidence.item():.3f}"
-    )
-
-    if confidence.item() >= 0.15:
-        reply = random.choice(
-            responses.get(tag, ["Sorry, no answer found."])
-        )
-    else:
-        reply = "Sorry, I didn't understand. Could you rephrase?"
-
+    reply = get_response(prompt)
     st.session_state.messages.append(
         {"role": "assistant", "content": reply}
     )
-
     with st.chat_message("assistant"):
         st.write(reply)
