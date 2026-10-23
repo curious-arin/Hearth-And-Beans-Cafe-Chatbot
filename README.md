@@ -46,7 +46,7 @@ Customer-Support-Department-Chatbot
 
 ```text
 -----------------------------------------------------------------
-| Final Training Accuracy: 92.93% | Final Training Loss: 0.2605 |
+| Final Training Accuracy: 99.65% | Final Training Loss: 0.0151 |
 -----------------------------------------------------------------
 ```
 
