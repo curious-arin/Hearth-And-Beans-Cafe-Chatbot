@@ -36,11 +36,19 @@ Customer-Support-Department-Chatbot
 ## 🧠 How It Works
 
 1. **Intent data:** The `data/intents.json` file contains intent tags, example patterns, and responses.
-2. **Text preprocessing:** messages are lowercased, punctuation is removed, english stopwords are filtered, and words are lemmatized using NLTK.
+2. **Text preprocessing:** Messages are lowercased, punctuation is removed, English stopwords are filtered, and words are lemmatized using NLTK.
 3. **Feature extraction:** A TF-IDF vectorizer converts text into numerical features.
 4. **Intent prediction:** A trained PyTorch neural network predicts the intent of the user's message.
 5. **Response generation:** The application selects a response associated with the predicted intent. If confidence is low, it asks the user to rephrase the question.
 6. **Web interface:** Streamlit displays the conversation and maintains chat history during the session.
+
+## 📊 Model Evaluation
+
+```text
+---------------------------------------------------------
+| Evaluation Accuracy: 99.89% | Evaluation Loss: 0.0017 |
+---------------------------------------------------------
+```
 
 ## 🛠️ Tech Stack
 
@@ -50,6 +58,7 @@ Customer-Support-Department-Chatbot
 - NLTK
 - Scikit-learn
 - NumPy
+
 
 ## 🔮 Future Improvements
 
