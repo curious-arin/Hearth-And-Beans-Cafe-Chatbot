@@ -2,7 +2,7 @@
 
 ## 🙂 Overview
 
-This project is a customer support chatbot for **Hearth & Beans Café**. It uses natural language processing and a trained PyTorch neural network to identify the intent behind a customer's message and return a relevant response.
+This project is a customer support chatbot (Aura) for **Hearth & Beans Café**. It uses natural language processing and a trained PyTorch neural network to identify the intent behind a customer's message and return a relevant response.
 
 The chatbot is presented through a Streamlit web application, providing a simple chat interface for customers to ask questions about the café.
 
