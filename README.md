@@ -1,5 +1,5 @@
 # Hearth & Beans Café Customer Support Chatbot ☕
-
+  
 ## 🙂 Overview
 
 This project is a customer support chatbot for **Hearth & Beans Café**. It uses natural language processing and a trained PyTorch neural network to identify the intent behind a customer's message and return a relevant response.
